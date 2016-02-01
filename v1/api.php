@@ -37,22 +37,16 @@ abstract class Api {
     protected function setRequestData()
     {
         $method = $_SERVER["REQUEST_METHOD"];
-        echo $method;
+        #echo $method;
         switch (strtolower($method)) {
             case "get":
-                //$this->request_data = self::cleanRequest($_GET["PATH_INFO"]);
                 self::$request_data = self::cleanRequest($_GET["PATH_INFO"]);
                 break;
             case "post":
-                //$this->request_data = self::cleanRequest($_POST["PATH_INFO"]);
                 self::$request_data = self::cleanRequest($_POST["PATH_INFO"]);
                 break;
             case "delete":
             case "put":
-                /*
-                parse_str(file_get_contents("php://input"), $this->request_data);
-                $this->request_data = self::cleanRequest($this->request_data);
-                */
                 parse_str(file_get_contents("php://input"), self::$request_data);
                 $this->request_data = self::cleanRequest(self::$request_data);
                 break;
@@ -80,16 +74,17 @@ abstract class Api {
     /*
      * Make responses with HTTP response codes (status-code)
      */
-    public function response($api_response, $response_code = 200)
+    public function response($response_code = 200, $content = "")
     {
         if (self::functionExists("http_response_code")) {
             http_response_code($response_code);
         } else {
             header("HTTP/1.1 " . $response_code . " " .
                                         self::requestStatus($response_code));
-            return json_encode($api_response);
         }
         header("Content-Type: ". self::$application);
+        print self::array2Json($content);
+        exit;
     }
     /*
      * Verify if php's version exist
@@ -128,4 +123,10 @@ abstract class Api {
      * exists.
      */
     abstract public function resourceExists($resource);
+
+    public function array2Json($array)
+    {
+        return json_encode($array, JSON_PRETTY_PRINT);
+        //return json_encode($array);
+    }
 }
