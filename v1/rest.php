@@ -57,14 +57,19 @@ class Rest extends Api {
         $latitude = $this->getLatitude($coordinate);
         $longitude = $this->getLongitude($coordinate);
         echo $latitude.",".$longitude;
-        /*
         $objPoi = new NearestPointsOfInterest(array('latitude' => $latitude, 'longitude'=>$longitude));
-        $poi = $objPoi->getNearestPointsOfInterest();
-        echo "POI:".$poi;
-        */
-        #$poi = new NearestPointsOfInterest(98101);
-        #$c = array('coordinate' => array('latitude' => $latitude, 'longitude'=>$longitude ));
-        #parent::response($response_code = 200, $c);
+        //$poi = $objPoi->getNearestPointsOfInterest();
+        //$this->poiWasFound($poi);
+    }
+
+    public function poiWasFound($poi)
+    {
+        if($this->poiWasFound($poi)) {
+            parent::response($response_code = 200, $poi);
+        } else {
+            parent::response($response_code = 404, array("stores" => 0, 
+                                        "message" => "Stores near not found"));
+        }
     }
 
     public function getStoresAlgolia($coordinate)
@@ -73,11 +78,13 @@ class Rest extends Api {
         $longitude = $this->getLongitude($coordinate);
         $client = new \AlgoliaSearch\Client(APPLICATION_ID, API_KEY);
         $index = $client->initIndex(INDEX_STORES);
-        $query = $index->search("",array("aroundLatLng"=>"$latitude,$longitude","aroundRadius"=> 1000));
+        $query = $index->search("",array("aroundLatLng"=>"$latitude,$longitude",
+                                                    "aroundRadius"=> 1000));
         if($this->validateNbHits($query)) {
             parent::response($response_code = 200, $this->arrayInformation($query));
         } else {
-            parent::response($response_code = 404, array("stores" => 0, "message" => "Stores near not found"));
+            parent::response($response_code = 404, array("stores" => 0, 
+                                        "message" => "Stores near not found"));
         }
     }
 
@@ -112,6 +119,14 @@ class Rest extends Api {
     {   
         preg_match('/,(.*?)$/', $coordinate, $output);
         return $output[1];
+    }
+
+    public function getStoresByZipCode($zip_code)
+    {
+        $objPoi = new NearestPointsOfInterest($zip_code);
+        #$poi = new NearestPointsOfInterest(98101);
+        $poi = $objPoi->getNearestPointsOfInterest();
+        $this->poiWasFound($poi);
     }
 }
 
