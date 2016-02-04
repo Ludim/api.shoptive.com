@@ -1,5 +1,9 @@
 <?php
 require_once 'api.php';
+require_once 'poi/NearestPointsOfInterest.php';
+require_once 'data/login_algolia.php';
+require 'vendor/autoload.php';
+
 //use Api\Shoptive;
 class Rest extends Api {
     public function __construct()
@@ -26,7 +30,7 @@ class Rest extends Api {
     public function resourceExists($request)
     {
         $existent_resources = array('getStores', 'getClothes',
-                                    'getStoresByZipCode');
+                                    'getStoresByZipCode', 'getStoresAlgolia');
         if($request[0] == "v1") {
             array_shift($request);
         }
@@ -52,9 +56,50 @@ class Rest extends Api {
     {
         $latitude = $this->getLatitude($coordinate);
         $longitude = $this->getLongitude($coordinate);
+        echo $latitude.",".$longitude;
+        /*
+        $objPoi = new NearestPointsOfInterest(array('latitude' => $latitude, 'longitude'=>$longitude));
+        $poi = $objPoi->getNearestPointsOfInterest();
+        echo "POI:".$poi;
+        */
+        #$poi = new NearestPointsOfInterest(98101);
+        #$c = array('coordinate' => array('latitude' => $latitude, 'longitude'=>$longitude ));
+        #parent::response($response_code = 200, $c);
+    }
 
-        $c = array('coordinate' => array('latitude' => $latitude, 'longitude'=>$longitude ));
-        parent::response($response_code = 200, $c);
+    public function getStoresAlgolia($coordinate)
+    {
+        $latitude = $this->getLatitude($coordinate);
+        $longitude = $this->getLongitude($coordinate);
+        $client = new \AlgoliaSearch\Client(APPLICATION_ID, API_KEY);
+        $index = $client->initIndex(INDEX_STORES);
+        $query = $index->search("",array("aroundLatLng"=>"$latitude,$longitude","aroundRadius"=> 1000));
+        if($this->validateNbHits($query)) {
+            parent::response($response_code = 200, $this->arrayInformation($query));
+        } else {
+            parent::response($response_code = 404, array("stores" => 0, "message" => "Stores near not found"));
+        }
+    }
+
+    public function validateNbHits($query)
+    {
+        //print_r($query);
+        if($query["nbHits"] == 0) {
+            return 0;
+        }
+        return 1;
+    }
+
+    public function arrayInformation($query)
+    {
+        $information = array();
+        for($i = 0; $i < sizeof($query["hits"]); $i++) {
+          $information[$i] = array("name"     => $query["hits"][$i]["name"], 
+                                   "address"    => $query["hits"][$i]["address"],
+                                   "_geoloc"  => $query["hits"][$i]["_geoloc"],
+                                   "zip_code" => $query["hits"][$i]["zip_code"]);
+        }
+        return $information;
     }
 
     public function getLatitude($coordinate)
@@ -68,12 +113,6 @@ class Rest extends Api {
         preg_match('/,(.*?)$/', $coordinate, $output);
         return $output[1];
     }
-
-    public function getClothes($clothes)
-    {
-        echo "getClothes";
-    }
-
 }
 
 $rest = new Rest();
