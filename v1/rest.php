@@ -2,6 +2,7 @@
 require_once 'api.php';
 require_once 'poi/NearestPointsOfInterest.php';
 require_once 'data/login_algolia.php';
+require_once 'data/ConnectionDB.php';
 require 'vendor/autoload.php';
 
 //use Api\Shoptive;
@@ -14,7 +15,6 @@ class Rest extends Api {
     {
         $request = parent::getRequestData();
         $resource = $this->resourceExists($request);
-        //$function_name = "$this->".$resource[0]."()";
         $object_method_name = strtolower(array_shift($resource));
         $object_method_args = $resource;
         if($this->methodExistsInsideThisClass($object_method_name) > 0) {
@@ -56,15 +56,15 @@ class Rest extends Api {
     {
         $latitude = $this->getLatitude($coordinate);
         $longitude = $this->getLongitude($coordinate);
-        echo $latitude.",".$longitude;
         $objPoi = new NearestPointsOfInterest(array('latitude' => $latitude, 'longitude'=>$longitude));
-        //$poi = $objPoi->getNearestPointsOfInterest();
-        //$this->poiWasFound($poi);
+        $poi = $objPoi->getNearestPointsOfInterest();
+        //print_r($poi);
+        $this->poiWasFound($poi);
     }
 
     public function poiWasFound($poi)
     {
-        if($this->poiWasFound($poi)) {
+        if($this->arraySize($poi)) {
             parent::response($response_code = 200, $poi);
         } else {
             parent::response($response_code = 404, array("stores" => 0, 
